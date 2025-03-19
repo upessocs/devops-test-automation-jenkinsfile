@@ -20,174 +20,204 @@ If you haven't already, install FastAPI and Uvicorn:
 pip install fastapi uvicorn
 ```
 
-### **Create the FastAPI Server (`api.py`)**
-```python
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
 
+### `apiserver.py`
+
+```python
+from fastapi import FastAPI
+
+# Initialize the FastAPI app
 app = FastAPI()
 
-class Result(BaseModel):
-    result: int
-
-@app.get("/", response_model=dict)
+# Root endpoint
+@app.get("/")
 def read_root():
-    return {"message": "Welcome to the FastAPI Math API"}
+    return {"Hello": "World"}
 
-@app.get("/add", response_model=Result)
-def add(num1: int = Query(..., description="First number"), num2: int = Query(..., description="Second number")):
+# Addition endpoint
+@app.get("/add/{num1}/{num2}")
+def add(num1: int, num2: int):
+    """
+    Adds two numbers.
+    Example: /add/2/3 returns {"result": 5}
+    """
     return {"result": num1 + num2}
 
-@app.get("/subtract", response_model=Result)
-def subtract(num1: int = Query(...), num2: int = Query(...)):
+# Subtraction endpoint
+@app.get("/subtract/{num1}/{num2}")
+def subtract(num1: int, num2: int):
+    """
+    Subtracts the second number from the first.
+    Example: /subtract/5/3 returns {"result": 2}
+    """
     return {"result": num1 - num2}
 
-@app.get("/multiply", response_model=Result)
-def multiply(num1: int = Query(...), num2: int = Query(...)):
+# Multiplication endpoint
+@app.get("/multiply/{num1}/{num2}")
+def multiply(num1: int, num2: int):
+    """
+    Multiplies two numbers.
+    Example: /multiply/2/3 returns {"result": 6}
+    """
     return {"result": num1 * num2}
 
+# Run the app using Uvicorn
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("apiserver:app", host="0.0.0.0", port=8000, reload=True)
 ```
-
-### **Key Improvements**
-**Query Parameters instead of Path Parameters**  
-Instead of `/add/2/3`, you can now use `/add?num1=2&num2=3`, making it more user-friendly.
-
-**Pydantic for Type Validation**  
-We define a `Result` model to ensure correct API responses.
-
-**Default Root Endpoint (`/`)**  
-A simple welcome message when accessing the base URL.
 
 ---
 
-## **2. Running the Server**
-Start the FastAPI server:
+### `testAutomation.py`
 
-```sh
-python api.py
-```
-
-Your API will be available at:
-
-```
-http://localhost:8000
-```
-
-You can test it using:
-
-```
-http://localhost:8000/add?num1=2&num2=3
-```
-
-FastAPI also provides automatic documentation:
-
-- **Swagger UI**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-
----
-
-## **3. Writing Automated API Tests**
-Now, let's automate API testing using the `requests` library.
-
-### **Install Requests**
-```sh
-pip install requests
-```
-
-### **Basic Test Script (`test_api.py`)**
 ```python
 import requests
 
-BASE_URL = "http://localhost:8000"
-
+# Define test cases for the API endpoints
 testcases = [
-    ("/add?num1=2&num2=2", 4),
-    ("/subtract?num1=2&num2=2", 0),
-    ("/multiply?num1=2&num2=2", 4),
+    {
+        "url": "http://localhost:8000/add/2/2",
+        "expected": 4,
+        "description": "Test addition of 2 and 2"
+    },
+    {
+        "url": "http://localhost:8000/subtract/2/2",
+        "expected": 0,
+        "description": "Test subtraction of 2 from 2"
+    },
+    {
+        "url": "http://localhost:8000/multiply/2/2",
+        "expected": 4,
+        "description": "Test multiplication of 2 and 2"
+    }
 ]
 
 def test():
-    for endpoint, expected in testcases:
-        response = requests.get(BASE_URL + endpoint)
-        assert response.json()["result"] == expected
+    """
+    Runs automated tests on the API endpoints.
+    Asserts that the API response matches the expected result.
+    """
+    for case in testcases:
+        # Make a GET request to the API endpoint
+        response = requests.get(case["url"])
+        
+        # Parse the JSON response
+        result = response.json()["result"]
+        
+        # Assert that the result matches the expected value
+        assert result == case["expected"], f"Test failed: {case['description']}. Expected {case['expected']}, got {result}"
+        
+        # Print success message if the test passes
+        print(f"Test passed: {case['description']}")
+    
     print("All tests passed!")
 
-if __name__ == "__main__":
-    test()
+# Run the test function
+test()
 ```
-
-### **Run the Tests**
-```sh
-python test_api.py
-```
-
-**If all tests pass**, you’ll see:
-```
-All tests passed!
-```
-
-**If a test fails**, it will throw an `AssertionError`.
 
 ---
 
-## **4. Enhancing Tests with Pytest**
-Instead of a simple script, we can use `pytest` for better testing.
+### Key Improvements and Comments
 
-### **Install Pytest**
-```sh
-pip install pytest
-```
+1. **Descriptive Comments**:
+   - Added comments to explain the purpose of each function and endpoint.
+   - Included example usage in the API endpoint docstrings.
 
-### **Refactored Test Script with Pytest (`test_api.py`)**
+2. **Test Case Descriptions**:
+   - Added a `description` field to each test case for better readability and debugging.
+
+3. **Error Handling in Tests**:
+   - The `assert` statement now includes a descriptive error message to help identify which test case failed.
+
+4. **Scalability**:
+   - The test framework is modular, making it easy to add more test cases or endpoints.
+
+---
+
+### How to Expand for Testing Automation
+
+1. **Add More Test Cases**:
+   - Include edge cases (e.g., negative numbers, zero, large numbers).
+   - Test invalid inputs (e.g., non-integer values) if the API includes input validation.
+
+2. **Parameterized Testing**:
+   - Use a library like `pytest` to parameterize tests and avoid repetitive code.
+
+3. **Test Other HTTP Methods**:
+   - Add tests for `POST`, `PUT`, `DELETE`, etc., if the API supports them.
+
+4. **Environment Configuration**:
+   - Use environment variables or a configuration file to manage different environments (e.g., development, staging, production).
+
+5. **Integration with CI/CD**:
+   - Integrate the test script into a CI/CD pipeline (e.g., GitHub Actions, Jenkins) to automate testing on every code change.
+
+6. **Performance Testing**:
+   - Use tools like `locust` or `k6` to test the API's performance under load.
+
+7. **Mocking External Dependencies**:
+   - If the API depends on external services, use mocking libraries like `responses` or `unittest.mock` to simulate those services.
+
+8. **Reporting**:
+   - Generate test reports using libraries like `pytest-html` or `allure` for better visibility into test results.
+
+---
+
+### Example of Expanded Test Automation with `pytest`
+
 ```python
 import pytest
 import requests
 
-BASE_URL = "http://localhost:8000"
-
+# Define test cases as a list of tuples for parameterized testing
 testcases = [
-    ("/add?num1=2&num2=2", 4),
-    ("/subtract?num1=2&num2=2", 0),
-    ("/multiply?num1=2&num2=2", 4),
-    ("/add?num1=-1&num2=5", 4),   # Test negative numbers
-    ("/multiply?num1=0&num2=5", 0) # Test zero multiplication
+    ("http://localhost:8000/add/2/2", 4, "Test addition of 2 and 2"),
+    ("http://localhost:8000/subtract/2/2", 0, "Test subtraction of 2 from 2"),
+    ("http://localhost:8000/multiply/2/2", 4, "Test multiplication of 2 and 2"),
+    ("http://localhost:8000/add/-1/1", 0, "Test addition of -1 and 1"),
+    ("http://localhost:8000/multiply/0/5", 0, "Test multiplication by zero"),
 ]
 
-@pytest.mark.parametrize("endpoint, expected", testcases)
-def test_math_operations(endpoint, expected):
-    response = requests.get(BASE_URL + endpoint)
-    assert response.status_code == 200, f"Failed: {endpoint}"
-    assert response.json()["result"] == expected
-```
+@pytest.mark.parametrize("url, expected, description", testcases)
+def test_api(url, expected, description):
+    """
+    Parameterized test for API endpoints.
+    """
+    response = requests.get(url)
+    result = response.json()["result"]
+    assert result == expected, f"{description}. Expected {expected}, got {result}"
 
-### **Run Tests with Pytest**
-```sh
-pytest test_api.py
+# Run tests using pytest
+if __name__ == "__main__":
+    pytest.main()
 ```
-
-**Advantages of Using Pytest**
-- Better test organization  
-- Detailed error reporting  
-- Can run multiple test files easily
 
 ---
 
-## **5. Expanding the Idea for Real-World Projects**
+### Summary
+
+- Your current implementation is a solid foundation for API development and testing.
+- By adding descriptive comments, improving test case management, and integrating with tools like `pytest`, you can create a robust and scalable testing framework.
+- Expanding the framework to include performance testing, CI/CD integration, and reporting will make it even more powerful.
+
+
+
+
+# Expanding the Idea for Real-World Projects**
 Now that we have a basic API with automated tests, how can this be applied in real-world projects?
 
-### **1️⃣Add Database Integration**
+### **1 Add Database Integration**
 Instead of simple arithmetic, imagine an API that fetches/stores data in a **PostgreSQL** or **MongoDB** database. Testing would involve:
 - **Checking data integrity** after each API call.
 - **Mocking database connections** for isolated testing.
 
-### **2️⃣Authentication and Authorization**
+### **2 Authentication and Authorization**
 - Add **OAuth2, JWT, or API keys** for secure endpoints.
 - Test unauthorized access to ensure security.
 
-### **3️⃣CI/CD Integration**
+### **3 CI/CD Integration**
 - Use **GitHub Actions / Jenkins** to automate testing on each code push.
 - Example **GitHub Action for Pytest**:
 
@@ -214,11 +244,11 @@ jobs:
         run: pytest test_api.py
 ```
 
-### **4️⃣Advanced Error Handling & Logging**
+### **4 Advanced Error Handling & Logging**
 - Use Python's `logging` module to track API requests/responses.
 - Store logs in **CloudWatch** or **Elastic Stack**.
 
-### **5️⃣Performance & Load Testing**
+### **5 Performance & Load Testing**
 - Use **`pytest-benchmark`** or **`locust.io`** to simulate high-traffic conditions.
 
 ---
