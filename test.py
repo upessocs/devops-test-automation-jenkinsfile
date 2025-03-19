@@ -21,3 +21,6 @@ def test():
         response = requests.get(case["url"])
         assert response.json()["result"] == case["expected"]
     print("All tests pass")
+    
+    
+test()
