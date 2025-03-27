@@ -273,6 +273,8 @@ jobs:
 
 ---
 
+> POLL
+
 ## **Final Thoughts**
 In this tutorial, we:
 Built a **FastAPI server** with three endpoints  
